@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"strconv"
 
-	"github.com/Dahl99/discordbot/internal/discord"
+	"github.com/JamesTiberiusKirk/DJGary/internal/discord"
 
 	"github.com/bwmarrin/discordgo"
 )

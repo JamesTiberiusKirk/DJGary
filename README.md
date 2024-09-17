@@ -1,3 +1,11 @@
+# DJ Gary
+
+Gary come home....
+
+Originally forked from `https://github.com/JamesTiberiusKirk/DJGary` 
+
+---
+
 # discordbot
 
 <!-- TABLE OF CONTENTS -->

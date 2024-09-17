@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/Dahl99/discordbot/internal/discord"
+	"github.com/JamesTiberiusKirk/DJGary/internal/discord"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/jung-m/dca"
@@ -116,7 +116,7 @@ func (v *VoiceInstance) QueueClear() {
 func (v *VoiceInstance) DCA(url string) {
 	opts := dca.StdEncodeOptions
 	opts.RawOutput = true
-	opts.Bitrate = 64
+	opts.Bitrate = 96
 	opts.Application = "lowdelay"
 
 	encodeSession, err := dca.EncodeFile(url, opts)

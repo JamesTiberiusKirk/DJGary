@@ -3,7 +3,7 @@ package discord
 import (
 	"log/slog"
 
-	"github.com/Dahl99/discordbot/internal/config"
+	"github.com/JamesTiberiusKirk/DJGary/internal/config"
 
 	"github.com/bwmarrin/discordgo"
 )

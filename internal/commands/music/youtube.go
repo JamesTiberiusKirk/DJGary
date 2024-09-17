@@ -4,17 +4,23 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"strings"
 
 	"google.golang.org/api/option"
 
-	"github.com/Dahl99/discordbot/internal/config"
-	"github.com/Dahl99/discordbot/internal/discord"
+	"github.com/JamesTiberiusKirk/DJGary/internal/config"
+	"github.com/JamesTiberiusKirk/DJGary/internal/discord"
 
 	"github.com/bwmarrin/discordgo"
 	ytdl "github.com/kkdai/youtube/v2"
 
 	"google.golang.org/api/youtube/v3"
 )
+
+func IsYoutubeURL(url string) bool {
+	return strings.Contains(url, "http://") || strings.Contains(url, "https://") &&
+		strings.Contains(url, "youtube.com")
+}
 
 type Video struct {
 	VideoID    string
@@ -63,6 +69,59 @@ func SearchVideoByName(name string) (*Video, error) {
 		VideoID:    videoID,
 		VideoTitle: videoTitle,
 	}, nil
+}
+
+func doPlaylistRequest(service *youtube.Service, playlistId string, pageToken string) (*youtube.PlaylistItemListResponse, error) {
+	call := service.PlaylistItems.List([]string{"snippet"})
+	call = call.PlaylistId(playlistId)
+	if pageToken != "" {
+		call = call.PageToken(pageToken)
+	}
+	call = call.MaxResults(50)
+	response, err := call.Do()
+	if err != nil {
+		slog.Warn("failed to find playlist on YouTube (youtube-api-v3)", "error", err)
+		return nil, err
+	}
+	return response, nil
+}
+
+func findPlaylistByPlaylistID(playlistID string) ([]*Video, error) {
+	slog.Info("finding playlist by ID", "playlistID", playlistID)
+
+	ctx := context.Background()
+	var err error
+	youtubeService, err := youtube.NewService(ctx, option.WithAPIKey(config.GetYoutubeApiKey()))
+	if err != nil {
+		slog.Warn("failed to create YoutubeService", "error", err)
+		return nil, err
+	}
+
+	nextPageToken := ""
+	var videos []*Video
+
+	for {
+		playlistResponse, err := doPlaylistRequest(youtubeService, playlistID, nextPageToken)
+		if err != nil {
+			slog.Warn("failed to find playlist on YouTube (youtube-api-v3)", "error", err)
+			return nil, err
+		}
+
+		for _, item := range playlistResponse.Items {
+			videos = append(videos, &Video{
+				VideoID:    item.Snippet.ResourceId.VideoId,
+				VideoTitle: item.Snippet.Title,
+			})
+		}
+
+		if playlistResponse.NextPageToken != "" {
+			break
+		}
+	}
+
+	slog.Info("amount of videos found in playlist", "amount", len(videos))
+
+	return videos, nil
 }
 
 func findVideoByVideoID(videoID string) (*Video, error) {

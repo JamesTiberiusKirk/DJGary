@@ -6,11 +6,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/Dahl99/discordbot/internal/commands/chess"
-	"github.com/Dahl99/discordbot/internal/commands/music"
-	"github.com/Dahl99/discordbot/internal/config"
-	"github.com/Dahl99/discordbot/internal/discord"
-	"github.com/Dahl99/discordbot/internal/handlers"
+	"github.com/JamesTiberiusKirk/DJGary/internal/commands/music"
+	"github.com/JamesTiberiusKirk/DJGary/internal/config"
+	"github.com/JamesTiberiusKirk/DJGary/internal/discord"
+	"github.com/JamesTiberiusKirk/DJGary/internal/handlers"
 )
 
 func Start() {
@@ -25,13 +24,7 @@ func Start() {
 	discord.InitConnection()
 
 	music.StartRoutine()
-	chess.InitAi()
 
-	// Connect to database and run migrations
-	//database.Connect()
-	//migrations.AutoMigrate()
-
-	defer chess.StopChessAi()
 	defer discord.Session.Close()
 
 	fmt.Println("Bot is running. Press Ctrl + C to exit.")

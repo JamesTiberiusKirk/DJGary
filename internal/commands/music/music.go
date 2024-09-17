@@ -2,17 +2,16 @@ package music
 
 import (
 	"log/slog"
+	"math/rand"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/Dahl99/discordbot/internal/discord"
+	"github.com/JamesTiberiusKirk/DJGary/internal/discord"
 
 	"github.com/bwmarrin/discordgo"
 )
-
-// youtubeVideoUrl is a constant containing endpoint for a youtube video.
-const youtubeVideoUrl string = "https://www.youtube.com/watch?v="
 
 func StartRoutine() {
 	SongSignal = make(chan PkgSong)
@@ -95,10 +94,16 @@ func PlayMusic(n []string, v *VoiceInstance, s *discordgo.Session, m *discordgo.
 		return
 	}
 
-	var video *Video
+	var videos []*Video
+
+	shuffle := false
+	if n[0] == "shuffle" {
+		shuffle = true
+		n = n[1:]
+	}
 
 	// If a youtube url is sent as argument
-	if strings.Contains(n[0], youtubeVideoUrl) {
+	if IsYoutubeURL(n[0]) {
 		urlParser, err := url.Parse(n[0])
 		if err != nil {
 			slog.Warn("failed to parse YouTube url", "error", err)
@@ -108,41 +113,67 @@ func PlayMusic(n []string, v *VoiceInstance, s *discordgo.Session, m *discordgo.
 
 		query := urlParser.Query()
 		urlVideoID := query.Get("v")
+		urlPlayListID := query.Get("list")
 
-		video, err = findVideoByVideoID(urlVideoID)
-		if err != nil {
-			slog.Info("failed to find video on YouTube from videoID", "videoID", urlVideoID, "error", err)
-			discord.SendChannelMessage(m.ChannelID, "**[Music]** Oops, something went wrong when fetching title on YouTube")
-			return
+		if urlVideoID != "" {
+			ytv, err := findVideoByVideoID(urlVideoID)
+			if err != nil {
+				slog.Info("failed to find video on YouTube from videoID", "videoID", urlVideoID, "error", err)
+				discord.SendChannelMessage(m.ChannelID, "**[Music]** Oops, something went wrong when fetching title on YouTube")
+				return
+			}
+			videos = append(videos, ytv)
+		}
+
+		if urlPlayListID != "" {
+			ytvs, err := findPlaylistByPlaylistID(urlPlayListID)
+			if err != nil {
+				slog.Info("failed to find videos on YouTube from playlistID", "playlistID", urlPlayListID, "error", err)
+				discord.SendChannelMessage(m.ChannelID, "**[Music]** Oops, something went wrong when fetching title on YouTube")
+				return
+			}
+			slog.Info("found videos on YouTube from playlistID", "playlistID", urlPlayListID, "videos", ytvs, "len", len(ytvs))
+			videos = append(videos, ytvs...)
 		}
 
 		// If argument(s) is not a youtube url
 	} else {
 		name := strings.Join(n, " ")
 		var err error
-		video, err = SearchVideoByName(name)
+		ytv, err := SearchVideoByName(name)
 		if err != nil {
 			slog.Info("failed to find song by searching YouTube", "name", name, "error", err)
 			discord.SendChannelMessage(m.ChannelID, "**[Music]** Can't find a song with that name")
 			return
 		}
+		videos = append(videos, ytv)
 	}
 
-	song, err := getSongDataByVideo(video, v, m)
-	if err != nil || song.data.ID == "" {
-		if err != nil {
-			slog.Warn("failed to get song data through youtube-dl", "error", err)
+	if shuffle {
+		for i := range videos {
+			j := rand.Intn(i + 1)
+			videos[i], videos[j] = videos[j], videos[i]
+		}
+	}
+
+	for _, video := range videos {
+		song, err := getSongDataByVideo(video, v, m)
+		if err != nil || song.data.ID == "" {
+			if err != nil {
+				slog.Warn("failed to get song data through youtube-dl", "error", err)
+			}
+
+			discord.SendChannelMessage(m.ChannelID, "**[Music]** Unable to find song")
+			return
 		}
 
-		discord.SendChannelMessage(m.ChannelID, "**[Music]** Unable to find song")
-		return
+		// discord.SendChannelMessage(m.ChannelID, "**[Music]** "+song.data.UserName+" has added **"+song.data.Title+"** to the queue")
+
+		go func() {
+			SongSignal <- song
+		}()
 	}
-
-	discord.SendChannelMessage(m.ChannelID, "**[Music]** "+song.data.UserName+" has added **"+song.data.Title+"** to the queue")
-
-	go func() {
-		SongSignal <- song
-	}()
+	discord.SendChannelMessage(m.ChannelID, "**[Music]** "+" Queued up "+strconv.Itoa(len(videos))+" songs")
 }
 
 func SkipMusic(v *VoiceInstance, m *discordgo.MessageCreate) {
