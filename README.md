@@ -2,7 +2,7 @@
 
 Gary come home....
 
-Originally forked from `https://github.com/JamesTiberiusKirk/DJGary` 
+Originally forked from `https://github.com/Dahl99/DiscordBot` 
 
 ---
 
