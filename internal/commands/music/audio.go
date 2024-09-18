@@ -77,6 +77,14 @@ func (v *VoiceInstance) Stop() {
 	}
 }
 
+// Pause stops the audio.
+func (v *VoiceInstance) Pause() {
+	v.pause = true
+	if v.encoder != nil {
+		v.stream.SetPaused(!v.stream.Paused())
+	}
+}
+
 // QueueAdd adds a song to the queue.
 func (v *VoiceInstance) QueueAdd(song Song) {
 	v.queueMutex.Lock()

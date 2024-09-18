@@ -79,11 +79,10 @@ func MessageCreateHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	case prefix + "stop":
 		music.StopMusic(v, m)
 	case prefix + "pause":
-		// TODO:
-		discord.SendChannelMessage(m.ChannelID, "Not implemented yet")
+		music.PauseMusic(v, m)
 	case prefix + "shuffle":
 		// TODO:
-		discord.SendChannelMessage(m.ChannelID, "Not implemented yet")
+		discord.SendChannelMessage(m.ChannelID, "Not implemented yet, temporary workaround: `play shuffle [url]`")
 	default:
 		return
 	}

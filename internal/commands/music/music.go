@@ -218,3 +218,23 @@ func StopMusic(v *VoiceInstance, m *discordgo.MessageCreate) {
 	slog.Info("successfully stopped playing music")
 	discord.SendChannelMessage(m.ChannelID, "**[Music]** I have now stopped playing music!")
 }
+
+func PauseMusic(v *VoiceInstance, m *discordgo.MessageCreate) {
+	slog.Info("user is pausing music", "userId", m.Author.ID, "username", m.Author.Username)
+
+	if v == nil {
+		slog.Info("failed to stop music, bot is not in a voice channel", "userId", m.Author.ID, "username", m.Author.Username)
+		discord.SendChannelMessage(m.ChannelID, "**[Music]** Can't stop playing music when not in a voice channel!")
+		return
+	}
+	voiceChannelID := discord.SearchVoiceChannelByUserID(m.Author.ID)
+	if v.voice.ChannelID != voiceChannelID {
+		slog.Info("failed to stop music, user is not in same voice channel as bot", "userId", m.Author.ID, "username", m.Author.Username)
+		discord.SendChannelMessage(m.ChannelID, "**[Music]** <@"+m.Author.ID+"> You need to join my voice channel to stop music!")
+		return
+	}
+
+	v.Pause()
+	slog.Info("successfully paused playing music")
+	discord.SendChannelMessage(m.ChannelID, "**[Music]** I have now paused playing music!")
+}
